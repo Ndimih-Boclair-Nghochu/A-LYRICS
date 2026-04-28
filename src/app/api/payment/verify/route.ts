@@ -1,58 +1,64 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { verifyTransaction, getPlanExpiry } from '@/lib/flutterwave'
+import { verifyPayment, getPlanExpiry } from '@/lib/payment'
+import type { PlanId } from '@/lib/plans'
 
-// Flutterwave redirects here after payment
+// DusuPay redirects the user here after payment (return_url)
+// Query params: ?ref=ALYRICS-PLANID-USERID-TS  (our txRef)
 export async function GET(request: NextRequest) {
-  const txRef = request.nextUrl.searchParams.get('tx_ref')
-  const transactionId = request.nextUrl.searchParams.get('transaction_id')
-  const status = request.nextUrl.searchParams.get('status')
-
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+  const txRef  = request.nextUrl.searchParams.get('ref') ?? ''
 
-  if (status !== 'successful' || !transactionId || !txRef) {
-    return NextResponse.redirect(`${appUrl}/pricing?payment=failed`)
+  if (!txRef) {
+    return NextResponse.redirect(`${appUrl}/pricing?payment=failed&reason=missing_ref`)
   }
 
-  // Check if already processed
-  const existing = await prisma.payment.findUnique({
-    where: { txRef },
-    select: { status: true, userId: true },
+  // ── Load payment record ─────────────────────────────────────────────────────
+  const payment = await prisma.payment.findUnique({
+    where:  { txRef },
+    select: { id: true, status: true, userId: true, plan: true, providerTransactionId: true },
   })
 
-  if (existing?.status === 'SUCCESSFUL') {
-    return NextResponse.redirect(`${appUrl}/app?payment=already_done`)
+  if (!payment) {
+    return NextResponse.redirect(`${appUrl}/pricing?payment=failed&reason=not_found`)
   }
 
-  const result = await verifyTransaction(transactionId)
+  // ── Idempotency: already processed ─────────────────────────────────────────
+  if (payment.status === 'SUCCESSFUL') {
+    return NextResponse.redirect(`${appUrl}/app?payment=success&plan=${payment.plan}`)
+  }
 
-  if (!result.success || !result.planId || !result.userId) {
+  if (!payment.providerTransactionId) {
+    return NextResponse.redirect(`${appUrl}/app?payment=pending`)
+  }
+
+  // ── Verify with DusuPay ─────────────────────────────────────────────────────
+  const result = await verifyPayment(payment.providerTransactionId, txRef)
+
+  if (!result.success || result.status !== 'completed') {
     await prisma.payment.update({
       where: { txRef },
-      data: { status: 'FAILED' },
+      data:  { status: result.status === 'cancelled' ? 'CANCELLED' : 'FAILED' },
     }).catch(() => {})
     return NextResponse.redirect(`${appUrl}/pricing?payment=failed`)
   }
 
-  // Update payment + user plan
+  // ── Atomically mark payment success + upgrade user plan ────────────────────
+  const planId = payment.plan as PlanId
   await prisma.$transaction([
     prisma.payment.update({
       where: { txRef },
-      data: {
-        status: 'SUCCESSFUL',
-        flutterwaveRef: result.flutterwaveRef,
-        amount: result.amount ?? 0,
-        currency: result.currency ?? 'NGN',
+      data:  {
+        status:      'SUCCESSFUL',
+        providerRef: result.providerTransactionId,
+        metadata:    result.rawResponse as object,
       },
     }),
     prisma.user.update({
-      where: { id: result.userId },
-      data: {
-        plan: result.planId,
-        planExpiresAt: getPlanExpiry(),
-      },
+      where: { id: payment.userId },
+      data:  { plan: planId, planExpiresAt: getPlanExpiry() },
     }),
   ])
 
-  return NextResponse.redirect(`${appUrl}/app?payment=success&plan=${result.planId}`)
+  return NextResponse.redirect(`${appUrl}/app?payment=success&plan=${planId}`)
 }

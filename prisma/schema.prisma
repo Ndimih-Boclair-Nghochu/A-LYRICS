@@ -48,16 +48,21 @@ model User {
 }
 
 model Payment {
-  id             String        @id @default(cuid())
-  userId         String
-  amount         Float
-  currency       String        @default("NGN")
-  plan           Plan
-  status         PaymentStatus @default(PENDING)
-  flutterwaveRef String?       @unique
-  txRef          String        @unique
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                    String        @id @default(cuid())
+  userId                String
+  amount                Float
+  currency              String        @default("USD")
+  plan                  Plan
+  status                PaymentStatus @default(PENDING)
+  provider              String        @default("dusupay")
+  txRef                 String        @unique   // our internal reference
+  providerTransactionId String?                 // provider's internal ID
+  providerRef           String?       @unique   // provider's public reference
+  phoneNumber           String?                 // mobile money phone
+  network               String?                 // e.g. "mtn_cm", "mpesa_ke"
+  metadata              Json?                   // raw provider response
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

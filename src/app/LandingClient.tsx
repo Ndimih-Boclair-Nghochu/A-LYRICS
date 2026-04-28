@@ -9,7 +9,7 @@ const FEATURES = [
   { icon: '📝', title: 'Synchronized Lyrics', desc: 'Search any song, get lyrics from our database, and watch them scroll in karaoke style.' },
   { icon: '📤', title: 'Upload Your Music', desc: 'Drag & drop your own MP3/audio file and see your stickers dance to it instantly.' },
   { icon: '🔍', title: 'Music Search', desc: 'Type any artist or song title — we find it, stream a preview, and fetch the lyrics automatically.' },
-  { icon: '🌍', title: 'Africa-First Payments', desc: 'Upgrade with card, mobile money, bank transfer & USSD via Flutterwave — works across Africa.' },
+  { icon: '🌍', title: 'Africa-First Payments', desc: 'Upgrade with Mobile Money (MTN, Orange, M-Pesa, Airtel & more) via DusuPay — Cameroon, Kenya, Ghana and beyond.' },
 ]
 
 export default function LandingClient() {
@@ -102,7 +102,7 @@ export default function LandingClient() {
       <section className="px-4 py-20" style={{ background:'rgba(18,18,42,0.4)' }}>
         <div className="max-w-5xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-black text-center mb-3">Pricing for Africa</h2>
-          <p className="text-slate-500 text-center mb-12">Pay with mobile money, card, or bank transfer via Flutterwave</p>
+          <p className="text-slate-500 text-center mb-12">Pay with Mobile Money via DusuPay — MTN, Orange, M-Pesa & more</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {PLANS.map((plan, i) => (
               <motion.div key={plan.id} initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} transition={{ delay:i*0.08 }} viewport={{ once:true }}
@@ -151,7 +151,7 @@ export default function LandingClient() {
             <Link href="/auth/register" className="hover:text-slate-400 transition-colors">Sign Up</Link>
             <Link href="/auth/login" className="hover:text-slate-400 transition-colors">Sign In</Link>
           </div>
-          <span>Powered by Flutterwave 🇳🇬</span>
+          <span>Powered by DusuPay 🌍</span>
         </div>
       </footer>
     </div>

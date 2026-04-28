@@ -2,37 +2,32 @@
 import { Suspense, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { PLANS } from '@/lib/plans'
-import type { PlanId } from '@/lib/plans'
+import type { PlanId, PlanConfig } from '@/lib/plans'
+import PaymentModal from '@/components/payment/PaymentModal'
 
 function PricingContent() {
   const { data: session } = useSession()
   const searchParams = useSearchParams()
   const router = useRouter()
-  const [loading, setLoading] = useState<string | null>(null)
-  const [error, setError] = useState('')
   const highlight = searchParams.get('plan')
 
-  const handleUpgrade = async (planId: PlanId) => {
-    if (!session) { router.push('/auth/register'); return }
-    if (planId === 'FREE') return
-    setLoading(planId)
-    setError('')
-
-    const res = await fetch('/api/payment/initiate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ planId }),
-    })
-
-    if (!res.ok) { setError('Failed to start payment. Try again.'); setLoading(null); return }
-    const { link }: { link: string } = await res.json()
-    window.location.href = link
-  }
+  const [activePlan, setActivePlan] = useState<PlanConfig | null>(null)
 
   const currentPlan = session?.user.plan ?? 'FREE'
+
+  const handleUpgrade = (plan: PlanConfig) => {
+    if (!session) { router.push('/auth/register'); return }
+    if (plan.id === 'FREE') return
+    setActivePlan(plan)
+  }
+
+  const handlePaymentSuccess = (planId: string) => {
+    setActivePlan(null)
+    router.push(`/app?payment=success&plan=${planId}`)
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-16">
@@ -43,22 +38,20 @@ function PricingContent() {
         </motion.h1>
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
           className="text-slate-400 text-lg">
-          Pay securely with card, mobile money, or bank transfer via Flutterwave
+          Pay securely with Mobile Money via DusuPay — built for Africa
         </motion.p>
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-          className="flex items-center justify-center gap-3 mt-4 text-sm text-slate-500">
-          <span>🇳🇬 NGN</span><span>🇬🇭 GHS</span><span>🇰🇪 KES</span><span>🇿🇦 ZAR</span><span>🇺🇬 UGX</span>
+          className="flex items-center justify-center gap-3 mt-4 text-sm text-slate-500 flex-wrap">
+          <span>🇨🇲 Cameroon</span><span>🇳🇬 Nigeria</span><span>🇰🇪 Kenya</span>
+          <span>🇬🇭 Ghana</span><span>🇺🇬 Uganda</span><span>🇹🇿 Tanzania</span>
+          <span>🇷🇼 Rwanda</span><span>🇿🇲 Zambia</span>
           <span className="text-slate-600">& more</span>
         </motion.div>
       </div>
 
-      {error && (
-        <div className="mb-8 text-center px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm max-w-md mx-auto">{error}</div>
-      )}
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {PLANS.map((plan, i) => {
-          const isCurrent = currentPlan === plan.id
+          const isCurrent    = currentPlan === plan.id
           const isHighlighted = highlight === plan.id
 
           return (
@@ -66,9 +59,9 @@ function PricingContent() {
               initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
               className={`relative rounded-3xl p-6 border transition-all flex flex-col ${isHighlighted ? 'scale-105' : ''}`}
               style={{
-                background: plan.popular ? `linear-gradient(180deg, ${plan.color}18, rgba(18,18,42,0.9))` : 'rgba(18,18,42,0.8)',
-                borderColor: isHighlighted || plan.popular ? plan.color : 'rgba(100,116,139,0.25)',
-                boxShadow: plan.popular ? `0 0 40px ${plan.color}20` : 'none',
+                background:   plan.popular ? `linear-gradient(180deg, ${plan.color}18, rgba(18,18,42,0.9))` : 'rgba(18,18,42,0.8)',
+                borderColor:  isHighlighted || plan.popular ? plan.color : 'rgba(100,116,139,0.25)',
+                boxShadow:    plan.popular ? `0 0 40px ${plan.color}20` : 'none',
                 backdropFilter: 'blur(16px)',
               }}>
 
@@ -88,12 +81,12 @@ function PricingContent() {
               <div className="mb-5">
                 <div className="flex items-end gap-1">
                   <span className="text-3xl font-black" style={{ color: plan.priceNGN === 0 ? '#64748b' : plan.color }}>
-                    {plan.priceNGN === 0 ? 'Free' : `₦${plan.priceNGN.toLocaleString()}`}
+                    {plan.priceUSD === 0 ? 'Free' : `$${plan.priceUSD}`}
                   </span>
-                  {plan.priceNGN > 0 && <span className="text-slate-500 text-sm mb-1">/month</span>}
+                  {plan.priceUSD > 0 && <span className="text-slate-500 text-sm mb-1">/month</span>}
                 </div>
-                {plan.priceUSD > 0 && (
-                  <p className="text-slate-600 text-xs">≈ ${plan.priceUSD}/month</p>
+                {plan.priceNGN > 0 && (
+                  <p className="text-slate-600 text-xs">≈ ₦{plan.priceNGN.toLocaleString()} / FCFA {Math.round(plan.priceUSD * 620).toLocaleString()}</p>
                 )}
               </div>
 
@@ -107,8 +100,8 @@ function PricingContent() {
               </ul>
 
               <motion.button
-                onClick={() => void handleUpgrade(plan.id)}
-                disabled={loading === plan.id || isCurrent}
+                onClick={() => handleUpgrade(plan)}
+                disabled={isCurrent}
                 whileTap={{ scale: 0.97 }}
                 className="w-full py-3 rounded-xl font-bold text-sm transition-all disabled:opacity-60"
                 style={
@@ -118,22 +111,34 @@ function PricingContent() {
                     ? { background: 'rgba(255,255,255,0.06)', color: 'white', border: '1px solid rgba(255,255,255,0.12)' }
                     : { background: plan.gradient, color: 'white', boxShadow: `0 4px 16px ${plan.color}35` }
                 }>
-                {loading === plan.id ? '⟳ Loading...' : isCurrent ? '✓ Current Plan' : plan.id === 'FREE' ? 'Get Started Free' : `Upgrade to ${plan.name}`}
+                {isCurrent ? '✓ Current Plan' : plan.id === 'FREE' ? 'Get Started Free' : `Upgrade to ${plan.name}`}
               </motion.button>
             </motion.div>
           )
         })}
       </div>
 
+      {/* Payment method note */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
+        className="mt-8 rounded-2xl p-4 border border-slate-700/30 text-center"
+        style={{ background: 'rgba(18,18,42,0.4)' }}>
+        <p className="text-slate-400 text-sm">
+          💳 Payments via <span className="text-white font-semibold">Mobile Money</span> (MTN, Orange, M-Pesa, Airtel &amp; more) · Powered by DusuPay
+        </p>
+        <p className="text-slate-600 text-xs mt-1">
+          International card &amp; PayPal support coming soon · <a href="mailto:support@alyrics.app" className="hover:text-slate-400 transition-colors">Contact us</a> for early access
+        </p>
+      </motion.div>
+
       {/* FAQ */}
       <div className="mt-16 max-w-2xl mx-auto">
         <h2 className="text-white font-black text-2xl text-center mb-8">FAQ</h2>
         <div className="space-y-4">
           {[
-            { q: 'What payment methods are accepted?', a: 'We accept all major cards, mobile money (MTN, Airtel, etc.), bank transfer, and USSD — powered by Flutterwave for Africa-wide coverage.' },
+            { q: 'What payment methods are accepted?', a: 'We accept Mobile Money payments via DusuPay — MTN Mobile Money, Orange Money, M-Pesa, Airtel Money and more across Africa. A PIN prompt is sent directly to your phone.' },
+            { q: 'Which countries are supported?', a: 'Cameroon (MTN & Orange), Kenya (M-Pesa), Uganda, Ghana, Tanzania, Rwanda, Zambia, Nigeria and more. International card support is coming soon.' },
             { q: 'Can I cancel anytime?', a: 'Yes! Plans are month-to-month. Cancel anytime and you\'ll keep access until your billing period ends.' },
             { q: 'Is the Free plan truly free?', a: 'Absolutely. The Free plan is free forever with 1 song per month and full access to all animated sticker features.' },
-            { q: 'What currencies are supported?', a: 'NGN, GHS, KES, ZAR, UGX, TZS, XOF and many more African currencies via Flutterwave.' },
           ].map((item, i) => (
             <div key={i} className="rounded-2xl p-5 border border-slate-700/30" style={{ background: 'rgba(18,18,42,0.6)' }}>
               <p className="text-white font-bold text-sm mb-2">{item.q}</p>
@@ -142,6 +147,18 @@ function PricingContent() {
           ))}
         </div>
       </div>
+
+      {/* Payment modal */}
+      <AnimatePresence>
+        {activePlan && (
+          <PaymentModal
+            plan={activePlan}
+            userCountry={session?.user.country}
+            onClose={() => setActivePlan(null)}
+            onSuccess={handlePaymentSuccess}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
@@ -172,7 +189,7 @@ export default function PricingPage() {
         </div>
       </nav>
 
-      <Suspense fallback={<div className="flex items-center justify-center py-32 text-slate-500">Loading plans...</div>}>
+      <Suspense fallback={<div className="flex items-center justify-center py-32 text-slate-500">Loading plans…</div>}>
         <PricingContent />
       </Suspense>
     </div>
