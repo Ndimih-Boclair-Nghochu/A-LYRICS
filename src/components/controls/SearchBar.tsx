@@ -9,9 +9,10 @@ import type { SearchResult } from '@/types/music'
 
 interface Props {
   audioEngine: ReturnType<typeof useAudioEngine>
+  onBeforePlay?: () => Promise<boolean>
 }
 
-export default function SearchBar({ audioEngine }: Props) {
+export default function SearchBar({ audioEngine, onBeforePlay }: Props) {
   const [inputValue, setInputValue] = useState('')
   const [showResults, setShowResults] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -44,6 +45,11 @@ export default function SearchBar({ audioEngine }: Props) {
     setShowResults(false)
     setInputValue(`${result.trackName} — ${result.artistName}`)
     clearSearch()
+
+    if (onBeforePlay) {
+      const allowed = await onBeforePlay()
+      if (!allowed) return
+    }
 
     const track = {
       id: String(result.trackId),

@@ -1,10 +1,13 @@
 'use client'
 import { motion } from 'framer-motion'
+import { useSession } from 'next-auth/react'
 import { usePlayerStore } from '@/store/playerStore'
+import UserMenu from '@/components/shared/UserMenu'
 
 export default function Header() {
   const isPlaying = usePlayerStore((s) => s.player.status === 'playing')
   const beat = usePlayerStore((s) => s.beat)
+  const { data: session } = useSession()
 
   return (
     <header className="relative flex items-center justify-between px-6 py-4 shrink-0 z-20">
@@ -47,8 +50,17 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Live indicator */}
+      {/* Right side: live indicator + user menu */}
       <div className="flex items-center gap-4">
+        {session?.user && (
+          <UserMenu user={{
+            name: session.user.name,
+            email: session.user.email!,
+            image: session.user.image,
+            plan: session.user.plan ?? 'FREE',
+            songsPlayedMonth: session.user.songsPlayedMonth ?? 0,
+          }} />
+        )}
         {isPlaying && (
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}

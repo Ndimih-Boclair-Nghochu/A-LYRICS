@@ -1,11 +1,10 @@
-import Link from 'next/link'
+import type { ReactNode } from 'react'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import LandingClient from './LandingClient'
 
-export default async function HomePage() {
+export default async function AppLayout({ children }: { children: ReactNode }) {
   const session = await getServerSession(authOptions)
-  if (session) redirect('/app')
-  return <LandingClient />
+  if (!session) redirect('/auth/login')
+  return <>{children}</>
 }

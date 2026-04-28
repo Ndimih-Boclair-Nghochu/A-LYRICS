@@ -7,9 +7,10 @@ import { parseLyrics } from '@/utils/lyricsParser'
 
 interface Props {
   audioEngine: ReturnType<typeof useAudioEngine>
+  onBeforePlay?: () => Promise<boolean>
 }
 
-export default function UploadButton({ audioEngine }: Props) {
+export default function UploadButton({ audioEngine, onBeforePlay }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [dragOver, setDragOver] = useState(false)
 
@@ -19,6 +20,12 @@ export default function UploadButton({ audioEngine }: Props) {
   const handleFile = useCallback(
     async (file: File) => {
       if (!file.type.startsWith('audio/')) return
+
+      if (onBeforePlay) {
+        const allowed = await onBeforePlay()
+        if (!allowed) return
+      }
+
       const url = URL.createObjectURL(file)
       const name = file.name.replace(/\.[^/.]+$/, '')
 
@@ -43,7 +50,7 @@ export default function UploadButton({ audioEngine }: Props) {
       const audio = audioEngine.initAudio(url, 'upload')
       await audio.play().catch(() => {})
     },
-    [audioEngine, setTrack, setLyrics]
+    [audioEngine, onBeforePlay, setTrack, setLyrics]
   )
 
   const handleDrop = (e: React.DragEvent) => {
