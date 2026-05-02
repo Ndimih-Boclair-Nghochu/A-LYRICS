@@ -21,9 +21,9 @@ export const PLANS: PlanConfig[] = [
     tagline: 'Try it out',
     priceNGN: 0,
     priceUSD: 0,
-    songsPerMonth: 1,
+    songsPerMonth: 10,
     features: [
-      '1 song per month',
+      '10 songs per month',
       'All animated stickers',
       'Beat-reactive stage',
       'Lyrics display',

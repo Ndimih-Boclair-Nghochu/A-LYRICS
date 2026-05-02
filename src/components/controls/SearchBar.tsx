@@ -86,7 +86,8 @@ export default function SearchBar({ audioEngine, onBeforePlay }: Props) {
     setTrack(track)
     const audio = audioEngine.initAudio(track.previewUrl, 'search')
     await audio.play().catch(() => {})
-    void fetchLyrics(track.artist, track.title, 30)
+    // Use real track duration (full song length from iTunes) so lyrics span the whole track
+    void fetchLyrics(track.artist, track.title, track.duration || 180)
   }
 
   const handleClear = () => {

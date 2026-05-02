@@ -3,7 +3,7 @@ import { useRef, useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { usePlayerStore } from '@/store/playerStore'
 import { useAudioEngine } from '@/hooks/useAudioEngine'
-import { parseLyrics } from '@/utils/lyricsParser'
+import { useLyrics } from '@/hooks/useLyrics'
 
 interface Props {
   audioEngine: ReturnType<typeof useAudioEngine>
@@ -15,7 +15,7 @@ export default function UploadButton({ audioEngine, onBeforePlay }: Props) {
   const [dragOver, setDragOver] = useState(false)
 
   const setTrack = usePlayerStore((s) => s.setTrack)
-  const setLyrics = usePlayerStore((s) => s.setLyrics)
+  const { fetchLyrics } = useLyrics()
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -27,12 +27,16 @@ export default function UploadButton({ audioEngine, onBeforePlay }: Props) {
       }
 
       const url = URL.createObjectURL(file)
+      // Try to parse "Artist - Title" filename for better lyrics matching
       const name = file.name.replace(/\.[^/.]+$/, '')
+      const dashSplit = name.split(/\s*[-–—]\s*/)
+      const artist = dashSplit.length >= 2 ? dashSplit[0] : 'Uploaded Track'
+      const title = dashSplit.length >= 2 ? dashSplit.slice(1).join(' - ') : name
 
       const track = {
         id: `upload-${Date.now()}`,
-        title: name,
-        artist: 'Uploaded Track',
+        title,
+        artist,
         album: '',
         previewUrl: url,
         artworkUrl: '',
@@ -41,16 +45,15 @@ export default function UploadButton({ audioEngine, onBeforePlay }: Props) {
       }
       setTrack(track)
 
-      const placeholder = parseLyrics(
-        `Now playing: ${name}\nUploaded track\nFeel the beat!\nA+ LYRICS\nDance to your music`,
-        180
-      )
-      setLyrics(placeholder, '')
-
       const audio = audioEngine.initAudio(url, 'upload')
+      // Wait for metadata so we know the real duration, then fetch full-length lyrics
+      audio.addEventListener('loadedmetadata', () => {
+        const dur = isFinite(audio.duration) && audio.duration > 0 ? audio.duration : 180
+        void fetchLyrics(artist, title, dur)
+      }, { once: true })
       await audio.play().catch(() => {})
     },
-    [audioEngine, onBeforePlay, setTrack, setLyrics]
+    [audioEngine, onBeforePlay, setTrack, fetchLyrics]
   )
 
   const handleDrop = (e: React.DragEvent) => {

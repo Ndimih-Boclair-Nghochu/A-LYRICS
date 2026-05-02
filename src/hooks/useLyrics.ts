@@ -24,7 +24,7 @@ export function useLyrics() {
   const setError = usePlayerStore((s) => s.setLyricsError)
 
   const fetchLyrics = useCallback(
-    async (artist: string, title: string, duration: number = 30) => {
+    async (artist: string, title: string, duration: number = 180) => {
       setLoading(true)
       try {
         const res = await fetch(

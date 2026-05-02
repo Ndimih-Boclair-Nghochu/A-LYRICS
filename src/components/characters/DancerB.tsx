@@ -1,195 +1,150 @@
 'use client'
-import { motion, useAnimationControls } from 'framer-motion'
-import { useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { useMemo } from 'react'
 import type { CharacterBeatProps } from '@/types/beat'
 
+type Mode = 'idle' | 'sway' | 'groove' | 'bounce' | 'hype'
+
+function getDanceMode(isPlaying: boolean, energy: number, isBeat: boolean): Mode {
+  if (!isPlaying) return 'idle'
+  if (isBeat && energy > 0.6) return 'hype'
+  if (energy > 0.55) return 'bounce'
+  if (energy > 0.28) return 'groove'
+  return 'sway'
+}
+
+const POSES: Record<Mode, {
+  body: { y: number | number[]; rotate: number | number[] }
+  armL: string; armR: string; legL: string; legR: string
+}> = {
+  idle: {
+    body: { y: 0, rotate: 0 },
+    armL: 'M4,92 C-8,118 -12,148 -10,172',
+    armR: 'M76,92 C88,118 92,148 90,172',
+    legL: 'M28,162 C24,208 20,240 18,272',
+    legR: 'M52,162 C56,208 60,240 62,272',
+  },
+  sway: {
+    body: { y: [0, -4, 0], rotate: [0, -3, 3, 0] },
+    armL: 'M4,92 C-18,105 -28,125 -24,155',
+    armR: 'M76,92 C95,108 108,130 104,158',
+    legL: 'M28,162 C22,205 18,238 16,270',
+    legR: 'M52,162 C58,206 64,240 66,272',
+  },
+  groove: {
+    body: { y: [0, -12, 0], rotate: [0, -6, 6, 0] },
+    armL: 'M4,92 C-22,85 -38,78 -36,58',
+    armR: 'M76,92 C108,98 128,95 130,72',
+    legL: 'M28,162 C16,196 8,225 12,258',
+    legR: 'M52,162 C64,198 72,228 68,260',
+  },
+  bounce: {
+    body: { y: [0, -18, 0], rotate: [0, 0, 0] },
+    armL: 'M4,92 C-25,72 -30,45 -18,18',
+    armR: 'M76,92 C102,75 112,50 100,22',
+    legL: 'M28,162 C18,192 12,218 22,252',
+    legR: 'M52,162 C62,194 68,220 58,254',
+  },
+  hype: {
+    body: { y: [0, -24, 5, 0], rotate: [0, 8, -8, 0] },
+    armL: 'M4,92 C-38,65 -52,28 -38,-4',
+    armR: 'M76,92 C112,68 130,32 116,-1',
+    legL: 'M28,162 C12,188 4,214 16,248',
+    legR: 'M52,162 C68,188 76,215 64,249',
+  },
+}
+
 export default function DancerB({ beat, isPlaying }: CharacterBeatProps) {
-  const bodyControls = useAnimationControls()
-  const armLControls = useAnimationControls()
-  const armRControls = useAnimationControls()
-  const capControls = useAnimationControls()
-  const legControls = useAnimationControls()
+  const mode = getDanceMode(isPlaying, beat.bassEnergy, beat.isBeat)
+  const pose = POSES[mode]
+  const bpmDur = beat.bpm > 0 ? (60 / beat.bpm) : 0.5
+  const glow = Math.round(beat.midEnergy * 16)
 
-  const swayDuration = beat.bpm > 0 ? 60 / beat.bpm : 0.5
-
-  useEffect(() => {
-    if (!isPlaying) {
-      bodyControls.start({ y: 0, rotate: 0 })
-      armLControls.start({ rotate: 0 })
-      armRControls.start({ rotate: 0 })
-      capControls.start({ y: 0 })
-      legControls.start({ rotate: 0 })
-      return
-    }
-
-    if (beat.isBeat) {
-      void bodyControls.start({
-        y: [-16, 0],
-        rotate: [-10, 10, 0],
-        transition: { duration: 0.25, ease: 'easeOut' },
-      })
-      void capControls.start({
-        y: [-8, 0],
-        transition: { duration: 0.2, ease: 'easeOut' },
-      })
-      void armLControls.start({
-        rotate: [20, 0],
-        transition: { duration: 0.2 },
-      })
-      void armRControls.start({
-        rotate: [-30, 0],
-        transition: { duration: 0.2 },
-      })
-      void legControls.start({
-        rotate: [8, -8, 0],
-        transition: { duration: 0.3 },
-      })
-    } else {
-      void bodyControls.start({
-        rotate: [0, -6, 0, 6, 0],
-        transition: { duration: swayDuration, ease: 'easeInOut', repeat: Infinity },
-      })
-      void armLControls.start({
-        rotate: [0, 20, 0],
-        transition: { duration: swayDuration, ease: 'easeInOut', repeat: Infinity },
-      })
-      void armRControls.start({
-        rotate: [0, -25, 0],
-        transition: { duration: swayDuration, ease: 'easeInOut', repeat: Infinity, delay: swayDuration / 2 },
-      })
-    }
-  }, [beat.isBeat, isPlaying, swayDuration, bodyControls, armLControls, armRControls, capControls, legControls])
-
-  const glowIntensity = Math.round(beat.bassEnergy * 14)
+  const bodyAnim = useMemo(() => {
+    if (typeof pose.body.y === 'number') return {}
+    return { y: pose.body.y, rotate: pose.body.rotate }
+  }, [pose])
 
   return (
     <div className="relative flex flex-col items-center select-none">
-      <motion.div animate={bodyControls} className="relative">
-        <svg
-          viewBox="0 0 140 295"
-          xmlns="http://www.w3.org/2000/svg"
-          width="110"
-          height="225"
-          style={{ filter: `drop-shadow(0 0 ${glowIntensity}px #00D2FF) drop-shadow(0 0 ${glowIntensity * 2}px #9B5DE5)` }}
-        >
-          <defs>
-            <radialGradient id="dancerBHead" cx="40%" cy="35%">
-              <stop offset="0%" stopColor="#7FF0FF" />
-              <stop offset="100%" stopColor="#0891B2" />
-            </radialGradient>
-            <radialGradient id="dancerBBody" cx="50%" cy="30%">
-              <stop offset="0%" stopColor="#FFA560" />
-              <stop offset="100%" stopColor="#C2410C" />
-            </radialGradient>
-          </defs>
-
-          {/* Cap brim */}
-          <motion.g animate={capControls} style={{ transformOrigin: '70px 45px' }}>
-            <ellipse cx="70" cy="60" rx="46" ry="12" fill="#1E1E2E" />
-            {/* Cap top */}
-            <path d="M28 60 Q28 22 70 22 Q112 22 112 60" fill="#2D2D3E" />
-            {/* Cap button */}
-            <circle cx="70" cy="24" r="5" fill="#FF6B9D" />
-            {/* Cap stripe */}
-            <path d="M28 50 Q70 42 112 50" stroke="#FF6B9D" strokeWidth="3" fill="none" />
-            {/* Cap visor */}
-            <path d="M24 62 Q70 70 116 62" fill="#111122" />
-          </motion.g>
-
-          {/* Head */}
-          <circle cx="70" cy="88" r="40" fill="url(#dancerBHead)" />
-          <circle cx="70" cy="88" r="40" fill="none" stroke="#0891B2" strokeWidth="2" />
-
-          {/* Cool sunglasses */}
-          <rect x="36" y="80" width="30" height="16" rx="5" fill="#1E1E2E" />
-          <rect x="74" y="80" width="30" height="16" rx="5" fill="#1E1E2E" />
-          {/* Glasses bridge */}
-          <line x1="66" y1="88" x2="74" y2="88" stroke="#1E1E2E" strokeWidth="4" />
-          {/* Glasses lens shine */}
-          <line x1="40" y1="84" x2="48" y2="82" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
-          <line x1="78" y1="84" x2="86" y2="82" stroke="white" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
-          {/* Glasses arms */}
-          <line x1="36" y1="88" x2="24" y2="85" stroke="#1E1E2E" strokeWidth="3" strokeLinecap="round" />
-          <line x1="104" y1="88" x2="116" y2="85" stroke="#1E1E2E" strokeWidth="3" strokeLinecap="round" />
-
-          {/* Smirk / cool mouth */}
-          <path d="M54 108 Q70 118 82 112" stroke="#0C4A6E" strokeWidth="3.5" fill="none" strokeLinecap="round" />
-          <path d="M55 109 Q66 115 80 112" fill="#38BDF8" opacity="0.3" />
-
-          {/* Neck */}
-          <rect x="58" y="123" width="24" height="22" fill="#7FF0FF" />
-
-          {/* Body / hoodie */}
-          <path d="M16 144 L46 133 L70 140 L94 133 L124 144 L120 248 L20 248 Z" fill="url(#dancerBBody)" />
-
-          {/* Hoodie pocket */}
-          <rect x="50" y="190" width="40" height="28" rx="5" fill="#AA3B0A" />
-          <line x1="70" y1="190" x2="70" y2="218" stroke="#C2410C" strokeWidth="2" />
-
-          {/* Hoodie strings */}
-          <line x1="60" y1="144" x2="55" y2="168" stroke="#FF8C35" strokeWidth="2.5" strokeLinecap="round" />
-          <line x1="80" y1="144" x2="85" y2="168" stroke="#FF8C35" strokeWidth="2.5" strokeLinecap="round" />
-
-          {/* Jeans */}
-          <path d="M20 248 L20 286 L62 286 L70 264 L78 286 L120 286 L120 248 Z" fill="#1E3A5F" />
-          {/* Jeans stitching */}
-          <line x1="20" y1="260" x2="62" y2="260" stroke="#2563EB" strokeWidth="1.5" strokeDasharray="4,3" />
-          <line x1="78" y1="260" x2="120" y2="260" stroke="#2563EB" strokeWidth="1.5" strokeDasharray="4,3" />
-
-          {/* Sneakers */}
-          <motion.g animate={legControls} style={{ transformOrigin: '45px 284px' }}>
-            <rect x="22" y="278" width="40" height="16" rx="8" fill="#FFD700" />
-            <rect x="22" y="278" width="40" height="8" rx="4" fill="white" />
-            {/* Laces */}
-            <line x1="28" y1="282" x2="56" y2="282" stroke="#FF6B35" strokeWidth="1.5" strokeDasharray="3,2" />
-          </motion.g>
-          <motion.g animate={legControls} style={{ transformOrigin: '95px 284px' }}>
-            <rect x="78" y="278" width="40" height="16" rx="8" fill="#FFD700" />
-            <rect x="78" y="278" width="40" height="8" rx="4" fill="white" />
-            <line x1="84" y1="282" x2="112" y2="282" stroke="#FF6B35" strokeWidth="1.5" strokeDasharray="3,2" />
-          </motion.g>
-
-          {/* Left arm - pointing down/back */}
-          <motion.g animate={armLControls} style={{ transformOrigin: '16px 147px' }}>
-            <path d="M16 149 Q-8 170 -12 200" stroke="#7FF0FF" strokeWidth="14" fill="none" strokeLinecap="round" />
-            <circle cx="-13" cy="203" r="11" fill="#7FF0FF" />
-          </motion.g>
-
-          {/* Right arm - pointing up */}
-          <motion.g animate={armRControls} style={{ transformOrigin: '124px 147px' }}>
-            <path d="M124 149 Q148 120 152 88" stroke="#7FF0FF" strokeWidth="14" fill="none" strokeLinecap="round" />
-            <circle cx="153" cy="85" r="11" fill="#7FF0FF" />
-            {/* Pointing finger */}
-            <line x1="153" y1="74" x2="152" y2="62" stroke="#7FF0FF" strokeWidth="6" strokeLinecap="round" />
-          </motion.g>
-
-          {/* Floating cool elements */}
-          <motion.text
-            x="116" y="130" fontSize="15" fill="#9B5DE5"
-            animate={isPlaying ? { y: [-5, -20], opacity: [1, 0], rotate: [0, 25] } : {}}
-            transition={{ duration: 1.4, repeat: Infinity, delay: 0.5 }}
-          >🔥</motion.text>
-          <motion.text
-            x="5" y="115" fontSize="13" fill="#00D2FF"
-            animate={isPlaying ? { y: [-5, -18], opacity: [1, 0] } : {}}
-            transition={{ duration: 1.2, repeat: Infinity, delay: 0.9 }}
-          >⚡</motion.text>
-          <motion.text
-            x="115" y="60" fontSize="11" fill="#FFD700"
-            animate={isPlaying ? { y: [-5, -16], opacity: [1, 0] } : {}}
-            transition={{ duration: 1.7, repeat: Infinity, delay: 0.2 }}
-          >💫</motion.text>
-        </svg>
-      </motion.div>
-
-      <motion.div
-        className="mt-1 px-3 py-1 rounded-full text-xs font-bold text-white"
-        style={{ background: 'linear-gradient(90deg, #00D2FF, #9B5DE5)' }}
-        animate={isPlaying ? { scale: [1, 1.05, 1] } : {}}
-        transition={{ duration: 1, repeat: Infinity, delay: 0.6 }}
+      <motion.svg
+        viewBox="-70 -10 220 320"
+        width="110" height="275"
+        style={{ filter: `drop-shadow(0 0 ${glow}px #00D2FF) drop-shadow(0 0 ${glow * 1.5}px #9B5DE5)` }}
+        animate={bodyAnim}
+        transition={{ duration: bpmDur, repeat: Infinity, ease: 'easeInOut' }}
       >
-        🕺 COOL
-      </motion.div>
+        <defs>
+          <radialGradient id="dancerBHead" cx="40%" cy="35%">
+            <stop offset="0%" stopColor="#BAE6FD" />
+            <stop offset="100%" stopColor="#0284C7" />
+          </radialGradient>
+          <linearGradient id="dancerBHoodie" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#334155" />
+            <stop offset="100%" stopColor="#1E293B" />
+          </linearGradient>
+        </defs>
+
+        <ellipse cx="40" cy="14" rx="36" ry="10" fill="#1D4ED8" />
+        <rect x="8" y="4" width="64" height="18" rx="6" fill="#2563EB" />
+        <ellipse cx="40" cy="4" rx="30" ry="8" fill="#1D4ED8" />
+        <ellipse cx="40" cy="22" rx="42" ry="7" fill="#1E3A8A" />
+
+        <circle cx="40" cy="42" r="30" fill="url(#dancerBHead)" />
+
+        <circle cx="29" cy="40" r="10" fill="white" />
+        <circle cx="51" cy="40" r="10" fill="white" />
+        <circle cx="31" cy="42" r="6" fill="#0284C7" />
+        <circle cx="53" cy="42" r="6" fill="#0284C7" />
+        <circle cx="32" cy="41" r="3" fill="#082F49" />
+        <circle cx="54" cy="41" r="3" fill="#082F49" />
+        <circle cx="30" cy="39" r="2" fill="white" />
+        <circle cx="52" cy="39" r="2" fill="white" />
+        <circle cx="19" cy="48" r="7" fill="#38BDF8" opacity="0.25" />
+        <circle cx="61" cy="48" r="7" fill="#38BDF8" opacity="0.25" />
+        <path d="M28,55 Q40,64 52,55" stroke="#0EA5E9" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+
+        <rect x="33" y="71" width="14" height="20" rx="6" fill="#93C5FD" />
+
+        <path d="M3,91 Q40,84 77,91 L74,165 Q40,172 6,165 Z" fill="url(#dancerBHoodie)" />
+        <circle cx="36" cy="98" r="3" fill="#CBD5E1" />
+        <circle cx="44" cy="98" r="3" fill="#CBD5E1" />
+        <rect x="28" y="140" width="24" height="16" rx="4" fill="rgba(0,0,0,0.2)" />
+
+        <motion.path d={pose.armL} stroke="#93C5FD" strokeWidth="14" strokeLinecap="round" fill="none"
+          transition={{ duration: bpmDur * 0.8, ease: 'easeInOut' }} />
+        <motion.path d={pose.armR} stroke="#93C5FD" strokeWidth="14" strokeLinecap="round" fill="none"
+          transition={{ duration: bpmDur * 0.8, ease: 'easeInOut', delay: bpmDur * 0.25 }} />
+
+        <path d="M6,162 Q40,170 74,162 L76,185 Q40,192 4,185 Z" fill="#0F172A" />
+
+        <motion.path d={pose.legL} stroke="#1E293B" strokeWidth="16" strokeLinecap="round" fill="none"
+          transition={{ duration: bpmDur, ease: 'easeInOut' }} />
+        <motion.path d={pose.legR} stroke="#1E293B" strokeWidth="16" strokeLinecap="round" fill="none"
+          transition={{ duration: bpmDur, ease: 'easeInOut', delay: bpmDur * 0.5 }} />
+
+        <ellipse cx="18" cy="276" rx="22" ry="9" fill="#E2E8F0" />
+        <ellipse cx="62" cy="276" rx="22" ry="9" fill="#E2E8F0" />
+        <rect x="6" y="268" width="26" height="10" rx="5" fill="white" />
+        <rect x="50" y="268" width="26" height="10" rx="5" fill="white" />
+        <line x1="10" y1="270" x2="28" y2="270" stroke="#60A5FA" strokeWidth="2" />
+        <line x1="54" y1="270" x2="72" y2="270" stroke="#60A5FA" strokeWidth="2" />
+
+        {isPlaying && ['⚡','🔥','💫'].map((s, i) => (
+          <motion.text key={i}
+            x={[85, -30, 88][i]} y={[42, 55, 70][i]}
+            fontSize="14"
+            animate={{ y: [0, -32], opacity: [1, 0] }}
+            transition={{ duration: 1.1 + i * 0.35, repeat: Infinity, delay: i * 0.55 }}
+          >{s}</motion.text>
+        ))}
+      </motion.svg>
+
+      <motion.div className="px-3 py-1 rounded-full text-xs font-bold text-white mt-1"
+        style={{ background: 'linear-gradient(90deg,#00D2FF,#9B5DE5)' }}
+        animate={isPlaying ? { scale: [1, 1.06, 1] } : {}}
+        transition={{ duration: bpmDur, repeat: Infinity, delay: 0.6 }}
+      >🕺 COOL</motion.div>
     </div>
   )
 }
