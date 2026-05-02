@@ -5,7 +5,8 @@ import { redirect } from 'next/navigation'
 import LandingClient from './LandingClient'
 
 export default async function HomePage() {
-  const session = await getServerSession(authOptions)
+  let session = null
+  try { session = await getServerSession(authOptions) } catch {}
   if (session) redirect('/app')
   return <LandingClient />
 }
