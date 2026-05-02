@@ -16,6 +16,7 @@ export default function SearchBar({ audioEngine, onBeforePlay }: Props) {
   const [inputValue, setInputValue] = useState('')
   const [showResults, setShowResults] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
+  const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -98,6 +99,13 @@ export default function SearchBar({ audioEngine, onBeforePlay }: Props) {
 
   const showDropdown = showResults && (results.length > 0 || (hasSearched && !isLoading))
 
+  useEffect(() => {
+    if (showDropdown && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect()
+      setDropdownRect({ top: rect.bottom + 8, left: rect.left, width: rect.width })
+    }
+  }, [showDropdown])
+
   return (
     <div ref={containerRef} className="relative w-full flex gap-2">
       {/* Input wrapper */}
@@ -144,17 +152,19 @@ export default function SearchBar({ audioEngine, onBeforePlay }: Props) {
         <span className="sm:hidden">▶</span>
       </motion.button>
 
-      {/* Results dropdown */}
+      {/* Results dropdown — fixed so it escapes any overflow-hidden parent */}
       <AnimatePresence>
-        {showDropdown && (
+        {showDropdown && dropdownRect && (
           <motion.div
             initial={{ opacity: 0, y: -8, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.97 }}
             transition={{ duration: 0.15 }}
-            className="absolute top-full mt-2 left-0 z-50 rounded-2xl overflow-hidden border border-slate-600/50"
+            className="fixed z-[9999] rounded-2xl overflow-hidden border border-slate-600/50"
             style={{
-              right: 0,
+              top: dropdownRect.top,
+              left: dropdownRect.left,
+              width: dropdownRect.width,
               background: 'rgba(18,18,42,0.97)',
               backdropFilter: 'blur(20px)',
               boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(155,93,229,0.2)',

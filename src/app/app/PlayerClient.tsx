@@ -50,7 +50,8 @@ export default function PlayerClient() {
   }, [update])
 
   return (
-    <div className="relative flex flex-col h-screen overflow-hidden" style={{ background: '#0A0A1A' }}>
+    // No overflow-hidden here — search dropdown must escape this container
+    <div className="relative flex flex-col h-screen" style={{ background: '#0A0A1A' }}>
       <Particles />
 
       {/* Payment toast */}
@@ -68,8 +69,8 @@ export default function PlayerClient() {
 
       <Header />
 
-      {/* Search row */}
-      <div className="relative z-10 px-3 sm:px-4 pb-2 shrink-0">
+      {/* Search row — z-30 so dropdown floats above tab bar and content panels */}
+      <div className="relative z-30 px-3 sm:px-4 pb-2 shrink-0">
         <div className="flex items-center gap-2 max-w-4xl mx-auto">
           <div className="flex-1 min-w-0">
             <SearchBar audioEngine={audioEngine} onBeforePlay={checkAndIncrementUsage} />
@@ -79,7 +80,7 @@ export default function PlayerClient() {
       </div>
 
       {/* ── DESKTOP: stage + lyrics side by side ── */}
-      <div className="hidden md:flex relative z-10 flex-1 min-h-0 gap-3 px-4 pb-2">
+      <div className="hidden md:flex relative z-10 flex-1 min-h-0 gap-3 px-4 pb-2 overflow-hidden">
         <motion.div
           className="flex flex-col rounded-2xl overflow-hidden card-glow rainbow-border"
           style={{ flex: '0 0 45%', minWidth: 0 }}
@@ -88,7 +89,7 @@ export default function PlayerClient() {
           <div className="px-3 pt-3 pb-1 shrink-0 flex items-center gap-2" style={{ background: 'rgba(18,18,42,0.8)' }}>
             <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">🎭 Stage</span>
           </div>
-          <div className="flex-1 min-h-0"><CharacterStage /></div>
+          <div className="flex-1 min-h-0 overflow-hidden"><CharacterStage /></div>
         </motion.div>
 
         <motion.div
@@ -111,7 +112,7 @@ export default function PlayerClient() {
       </div>
 
       {/* ── MOBILE: tab bar + swappable content ── */}
-      <div className="md:hidden flex flex-col flex-1 min-h-0 relative z-10 px-3 pb-2 gap-2">
+      <div className="md:hidden flex flex-col flex-1 min-h-0 relative z-10 px-3 pb-2 gap-2 overflow-hidden">
         {/* Tab switcher */}
         <div
           className="flex rounded-xl overflow-hidden shrink-0 border border-slate-700/40"
@@ -157,7 +158,7 @@ export default function PlayerClient() {
                 <div className="flex-1 min-h-0 overflow-hidden"><LyricsDisplay /></div>
               </div>
             ) : (
-              <div className="h-full"><CharacterStage /></div>
+              <div className="h-full overflow-hidden"><CharacterStage /></div>
             )}
           </motion.div>
         </AnimatePresence>
