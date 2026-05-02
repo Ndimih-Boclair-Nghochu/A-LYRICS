@@ -13,16 +13,16 @@ import UsageLimitModal from '@/components/shared/UsageLimitModal'
 import { useAudioEngine } from '@/hooks/useAudioEngine'
 import { usePlayerStore } from '@/store/playerStore'
 
-export default function PlayerPage() {
+export default function PlayerClient() {
   const { data: session, update } = useSession()
   const audioEngine = useAudioEngine()
   const [limitModalOpen, setLimitModalOpen] = useState(false)
   const [paymentToast, setPaymentToast] = useState<'success' | 'failed' | null>(null)
+  const [mobileTab, setMobileTab] = useState<'lyrics' | 'stage'>('lyrics')
 
   const status = usePlayerStore((s) => s.player.status)
   const isPlaying = status === 'playing'
 
-  // Check for payment redirect success/failure
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const payment = params.get('payment')
@@ -39,13 +39,9 @@ export default function PlayerPage() {
     }
   }, [update])
 
-  // Called before playing a song to check quota
   const checkAndIncrementUsage = useCallback(async (): Promise<boolean> => {
     const res = await fetch('/api/user/usage', { method: 'POST' })
-    if (res.status === 403) {
-      setLimitModalOpen(true)
-      return false
-    }
+    if (res.status === 403) { setLimitModalOpen(true); return false }
     if (res.ok) {
       const data: { songsPlayedMonth: number } = await res.json()
       await update({ songsPlayedMonth: data.songsPlayedMonth })
@@ -61,31 +57,31 @@ export default function PlayerPage() {
       <AnimatePresence>
         {paymentToast && (
           <motion.div
-            initial={{ opacity: 0, y: -40 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -40 }}
-            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl font-bold text-white text-sm shadow-2xl"
+            initial={{ opacity: 0, y: -40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -40 }}
+            className="fixed top-4 left-3 right-3 sm:left-auto sm:right-auto sm:left-1/2 sm:-translate-x-1/2 z-50 px-5 py-3 rounded-2xl font-bold text-white text-sm shadow-2xl text-center"
             style={{ background: paymentToast === 'success' ? 'linear-gradient(135deg,#00F5A0,#059669)' : 'linear-gradient(135deg,#EF4444,#DC2626)' }}
           >
-            {paymentToast === 'success' ? '🎉 Payment successful! Enjoy your upgraded plan!' : '❌ Payment failed. Please try again.'}
+            {paymentToast === 'success' ? '🎉 Payment successful! Plan upgraded!' : '❌ Payment failed. Please try again.'}
           </motion.div>
         )}
       </AnimatePresence>
 
       <Header />
 
-      <div className="relative z-10 px-4 pb-3 shrink-0">
-        <div className="flex items-center gap-3 max-w-4xl mx-auto">
-          <div className="flex-1">
+      {/* Search row */}
+      <div className="relative z-10 px-3 sm:px-4 pb-2 shrink-0">
+        <div className="flex items-center gap-2 max-w-4xl mx-auto">
+          <div className="flex-1 min-w-0">
             <SearchBar audioEngine={audioEngine} onBeforePlay={checkAndIncrementUsage} />
           </div>
           <UploadButton audioEngine={audioEngine} onBeforePlay={checkAndIncrementUsage} />
         </div>
       </div>
 
-      <div className="relative z-10 flex flex-1 min-h-0 gap-3 px-4 pb-2">
+      {/* ── DESKTOP: stage + lyrics side by side ── */}
+      <div className="hidden md:flex relative z-10 flex-1 min-h-0 gap-3 px-4 pb-2">
         <motion.div
-          className="hidden md:flex flex-col rounded-2xl overflow-hidden card-glow rainbow-border"
+          className="flex flex-col rounded-2xl overflow-hidden card-glow rainbow-border"
           style={{ flex: '0 0 45%', minWidth: 0 }}
           initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5 }}
         >
@@ -106,7 +102,7 @@ export default function PlayerPage() {
               <span className="text-xs text-slate-600">
                 {session.user.plan === 'FREE'
                   ? `${session.user.songsPlayedMonth}/1 free songs used`
-                  : `${session.user.plan} Plan • ${isPlaying ? '🔴 Live' : ''}`}
+                  : `${session.user.plan} Plan${isPlaying ? ' · 🔴 Live' : ''}`}
               </span>
             )}
           </div>
@@ -114,10 +110,60 @@ export default function PlayerPage() {
         </motion.div>
       </div>
 
-      <div className="md:hidden relative z-10 px-4 pb-2 shrink-0" style={{ height: '220px' }}>
-        <div className="h-full rounded-2xl overflow-hidden card-glow rainbow-border"><CharacterStage /></div>
+      {/* ── MOBILE: tab bar + swappable content ── */}
+      <div className="md:hidden flex flex-col flex-1 min-h-0 relative z-10 px-3 pb-2 gap-2">
+        {/* Tab switcher */}
+        <div
+          className="flex rounded-xl overflow-hidden shrink-0 border border-slate-700/40"
+          style={{ background: 'rgba(18,18,42,0.7)' }}
+        >
+          {(['lyrics', 'stage'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setMobileTab(tab)}
+              className="flex-1 py-2.5 text-xs font-bold uppercase tracking-wider transition-all"
+              style={
+                mobileTab === tab
+                  ? { background: 'linear-gradient(135deg,#FF6B9D,#9B5DE5)', color: 'white' }
+                  : { color: '#64748b', background: 'transparent' }
+              }
+            >
+              {tab === 'lyrics' ? '🎤 Lyrics' : '🎭 Stage'}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={mobileTab}
+            initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.15 }}
+            className="flex-1 min-h-0 rounded-2xl overflow-hidden"
+            style={{ background: 'rgba(12,12,28,0.85)', border: '1px solid rgba(155,93,229,0.18)' }}
+          >
+            {mobileTab === 'lyrics' ? (
+              <div className="h-full flex flex-col">
+                <div className="px-3 pt-2.5 pb-1 shrink-0 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">🎤 Lyrics</span>
+                  {session && (
+                    <span className="text-xs text-slate-600">
+                      {session.user.plan === 'FREE'
+                        ? `${session.user.songsPlayedMonth}/1 songs`
+                        : `${session.user.plan}${isPlaying ? ' 🔴' : ''}`}
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1 min-h-0 overflow-hidden"><LyricsDisplay /></div>
+              </div>
+            ) : (
+              <div className="h-full"><CharacterStage /></div>
+            )}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
+      {/* Player controls */}
       <div className="relative z-20 shrink-0">
         <PlayerControls audioEngine={audioEngine} />
       </div>

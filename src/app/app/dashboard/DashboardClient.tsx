@@ -29,18 +29,18 @@ export default function DashboardPage() {
   )
 
   return (
-    <div className="min-h-screen p-6" style={{ background: '#0A0A1A' }}>
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen p-4 sm:p-6" style={{ background: '#0A0A1A' }}>
+      <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-3">
           <div>
-            <Link href="/app" className="text-slate-500 text-sm hover:text-slate-300 transition-colors">← Back to Player</Link>
-            <h1 className="text-2xl font-black text-white mt-1">Dashboard</h1>
+            <Link href="/app" className="text-slate-500 text-sm hover:text-slate-300 transition-colors">← Player</Link>
+            <h1 className="text-xl sm:text-2xl font-black text-white mt-1">Dashboard</h1>
             <p className="text-slate-500 text-sm">Welcome back, {userData?.name ?? 'Superstar'} 🎵</p>
           </div>
-          <Link href="/pricing" className="px-4 py-2 rounded-xl text-white text-sm font-bold transition-all hover:scale-105"
+          <Link href="/pricing" className="px-3 sm:px-4 py-2 rounded-xl text-white text-xs sm:text-sm font-bold transition-all hover:scale-105 shrink-0"
             style={{ background: 'linear-gradient(135deg,#FF6B9D,#9B5DE5)' }}>
-            ⚡ Upgrade Plan
+            ⚡ Upgrade
           </Link>
         </div>
 
@@ -83,7 +83,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* Stats grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           {[
             { label: 'Songs Played', value: songsPlayed, icon: '🎵', color: '#FF6B9D' },
             { label: 'Current Plan', value: plan.name, icon: plan.emoji, color: plan.color },
@@ -128,7 +128,7 @@ export default function DashboardPage() {
         )}
 
         {/* Quick actions */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
           {[
             { href: '/app', icon: '🎵', label: 'Play Music' },
             { href: '/app/profile', icon: '👤', label: 'Edit Profile' },

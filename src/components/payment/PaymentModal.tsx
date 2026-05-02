@@ -128,8 +128,8 @@ export default function PaymentModal({ plan, userCountry, onClose, onSuccess }: 
         animate={{ scale: 1,    y: 0,  opacity: 1 }}
         exit={{ scale: 0.87, y: 30, opacity: 0 }}
         transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-        className="w-full max-w-md rounded-3xl p-7 border border-slate-700/50"
-        style={{ background: 'rgba(18,18,42,0.98)', boxShadow: '0 0 80px rgba(155,93,229,0.2)' }}
+        className="w-full max-w-md rounded-3xl border border-slate-700/50 overflow-y-auto"
+        style={{ background: 'rgba(18,18,42,0.98)', boxShadow: '0 0 80px rgba(155,93,229,0.2)', maxHeight: '92dvh', padding: 'clamp(1.25rem, 4vw, 1.75rem)' }}
         onClick={e => e.stopPropagation()}
       >
         <AnimatePresence mode="wait">

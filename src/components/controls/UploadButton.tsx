@@ -76,7 +76,7 @@ export default function UploadButton({ audioEngine, onBeforePlay }: Props) {
         onDrop={handleDrop}
         whileHover={{ scale: 1.04 }}
         whileTap={{ scale: 0.96 }}
-        className="flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold transition-all border"
+        className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-3 rounded-2xl text-sm font-semibold transition-all border shrink-0"
         style={{
           background: dragOver ? 'rgba(0,210,255,0.15)' : 'rgba(255,255,255,0.05)',
           borderColor: dragOver ? '#00D2FF' : 'rgba(255,255,255,0.12)',
@@ -85,7 +85,7 @@ export default function UploadButton({ audioEngine, onBeforePlay }: Props) {
         }}
       >
         <span>📤</span>
-        <span>Upload</span>
+        <span className="hidden sm:inline">Upload</span>
       </motion.button>
     </>
   )

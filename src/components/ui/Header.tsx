@@ -10,7 +10,7 @@ export default function Header() {
   const { data: session } = useSession()
 
   return (
-    <header className="relative flex items-center justify-between px-6 py-4 shrink-0 z-20">
+    <header className="relative flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 shrink-0 z-20">
       {/* Logo */}
       <div className="flex items-center gap-3">
         <motion.div
@@ -31,7 +31,7 @@ export default function Header() {
 
         <div>
           <motion.h1
-            className="text-2xl font-black tracking-tight"
+            className="text-lg sm:text-2xl font-black tracking-tight"
             style={{
               background: 'linear-gradient(90deg, #FF6B9D, #FFD700, #00F5A0, #00D2FF, #9B5DE5, #FF6B9D)',
               backgroundSize: '300% 100%',
@@ -80,7 +80,7 @@ export default function Header() {
         {/* Beat BPM display */}
         {isPlaying && beat.bpm > 60 && (
           <motion.div
-            className="text-xs font-mono text-slate-500 hidden sm:block"
+            className="text-xs font-mono text-slate-500"
             animate={beat.isBeat ? { color: '#9B5DE5', scale: 1.1 } : { color: '#64748b', scale: 1 }}
             transition={{ duration: 0.1 }}
           >
