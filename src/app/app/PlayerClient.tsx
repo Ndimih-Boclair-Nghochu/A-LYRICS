@@ -8,6 +8,7 @@ import CharacterStage from '@/components/stage/CharacterStage'
 import SearchBar from '@/components/controls/SearchBar'
 import PlayerControls from '@/components/controls/PlayerControls'
 import UploadButton from '@/components/controls/UploadButton'
+import RecordButton from '@/components/controls/RecordButton'
 import UsageLimitModal from '@/components/shared/UsageLimitModal'
 import { useAudioEngine } from '@/hooks/useAudioEngine'
 import { usePlayerStore } from '@/store/playerStore'
@@ -71,6 +72,7 @@ export default function PlayerClient() {
             <SearchBar audioEngine={audioEngine} onBeforePlay={checkAndIncrementUsage} />
           </div>
           <UploadButton audioEngine={audioEngine} onBeforePlay={checkAndIncrementUsage} />
+          <RecordButton audioEngine={audioEngine} />
         </div>
       </div>
 

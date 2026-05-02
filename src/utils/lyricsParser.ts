@@ -1,6 +1,6 @@
 import type { LyricLine } from '@/types/music'
 
-export function parseLyrics(rawText: string, duration: number = 30): LyricLine[] {
+export function parseLyrics(rawText: string, duration: number = 180): LyricLine[] {
   const lines = rawText
     .split('\n')
     .map(l => l.trim())
