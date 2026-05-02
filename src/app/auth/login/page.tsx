@@ -16,10 +16,15 @@ export default function LoginPage() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    const res = await signIn('credentials', { email, password, redirect: false })
-    setLoading(false)
-    if (res?.error) { setError('Invalid email or password'); return }
-    router.push('/app')
+    try {
+      const res = await signIn('credentials', { email, password, redirect: false })
+      setLoading(false)
+      if (res?.error) { setError('Invalid email or password'); return }
+      router.push('/app')
+    } catch {
+      setLoading(false)
+      setError('Network error. Please check your connection and try again.')
+    }
   }
 
   return (

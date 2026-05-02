@@ -17,7 +17,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="h-full">
-      <body className="h-full overflow-hidden">
+      <body className="h-full">
         <SessionProviderWrapper>{children}</SessionProviderWrapper>
       </body>
     </html>

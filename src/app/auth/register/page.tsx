@@ -20,25 +20,35 @@ export default function RegisterPage() {
     setErrors({})
     setLoading(true)
 
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    })
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
 
-    if (!res.ok) {
-      const data: { error: Record<string, string[]> | string } = await res.json()
-      if (typeof data.error === 'object') {
-        setErrors(Object.fromEntries(Object.entries(data.error).map(([k, v]) => [k, v[0]])))
-      } else {
-        setErrors({ general: String(data.error) })
+      if (!res.ok) {
+        const data: { error: Record<string, string[]> | string } = await res.json()
+        if (typeof data.error === 'object') {
+          setErrors(Object.fromEntries(Object.entries(data.error).map(([k, v]) => [k, v[0]])))
+        } else {
+          setErrors({ general: String(data.error) })
+        }
+        setLoading(false)
+        return
       }
-      setLoading(false)
-      return
-    }
 
-    await signIn('credentials', { email: form.email, password: form.password, redirect: false })
-    router.push('/app')
+      const result = await signIn('credentials', { email: form.email, password: form.password, redirect: false })
+      if (result?.error) {
+        setErrors({ general: 'Account created but sign-in failed. Please log in manually.' })
+        setLoading(false)
+        return
+      }
+      router.push('/app')
+    } catch {
+      setErrors({ general: 'Network error. Please check your connection and try again.' })
+      setLoading(false)
+    }
   }
 
   return (

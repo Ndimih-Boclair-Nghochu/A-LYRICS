@@ -9,8 +9,23 @@ export function useSearch() {
   const setLoading = usePlayerStore((s) => s.setSearchLoading)
   const setError = usePlayerStore((s) => s.setSearchError)
 
-  const search = useCallback(
+  const doFetch = useCallback(
     async (query: string) => {
+      setLoading(true)
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`)
+        if (!res.ok) throw new Error('Search failed')
+        const data = await res.json()
+        setResults(data.results || [])
+      } catch {
+        setError('Search failed. Please try again.')
+      }
+    },
+    [setResults, setLoading, setError]
+  )
+
+  const search = useCallback(
+    async (query: string, immediate = false) => {
       setQuery(query)
       if (!query.trim()) {
         setResults([], false)
@@ -19,19 +34,13 @@ export function useSearch() {
 
       if (debounceRef.current) clearTimeout(debounceRef.current)
 
-      debounceRef.current = setTimeout(async () => {
-        setLoading(true)
-        try {
-          const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`)
-          if (!res.ok) throw new Error('Search failed')
-          const data = await res.json()
-          setResults(data.results || [])
-        } catch {
-          setError('Search failed. Please try again.')
-        }
-      }, 400)
+      if (immediate) {
+        await doFetch(query)
+      } else {
+        debounceRef.current = setTimeout(() => void doFetch(query), 400)
+      }
     },
-    [setQuery, setResults, setLoading, setError]
+    [setQuery, setResults, doFetch]
   )
 
   const clearSearch = useCallback(() => {

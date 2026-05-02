@@ -50,7 +50,7 @@ export default function PlayerClient() {
   }, [update])
 
   return (
-    <div className="relative flex flex-col h-full overflow-hidden" style={{ background: '#0A0A1A' }}>
+    <div className="relative flex flex-col h-screen overflow-hidden" style={{ background: '#0A0A1A' }}>
       <Particles />
 
       {/* Payment toast */}
