@@ -50,8 +50,7 @@ export default function PlayerClient() {
   }, [update])
 
   return (
-    // No overflow-hidden here — search dropdown must escape this container
-    <div className="relative flex flex-col h-screen" style={{ background: '#0A0A1A' }}>
+    <div className="fixed inset-0 flex flex-col" style={{ background: '#0A0A1A' }}>
       <Particles />
 
       {/* Payment toast */}
