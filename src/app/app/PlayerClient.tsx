@@ -111,7 +111,7 @@ export default function PlayerClient() {
               <span className="text-xs text-slate-500 font-medium px-2 py-0.5 rounded-full"
                 style={{ background: 'rgba(0,0,0,0.4)' }}>
                 {session.user.plan === 'FREE'
-                  ? `${session.user.songsPlayedMonth}/10`
+                  ? `FREE · ${session.user.songsPlayedMonth} played${isPlaying ? ' · 🔴' : ''}`
                   : `${session.user.plan}${isPlaying ? ' · 🔴' : ''}`}
               </span>
             </div>
