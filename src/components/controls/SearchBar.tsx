@@ -5,14 +5,16 @@ import { usePlayerStore } from '@/store/playerStore'
 import { useSearch } from '@/hooks/useSearch'
 import { useLyrics } from '@/hooks/useLyrics'
 import { useAudioEngine } from '@/hooks/useAudioEngine'
+import { useSpotifyPlayer } from '@/hooks/useSpotifyPlayer'
 import type { SearchResult } from '@/types/music'
 
 interface Props {
   audioEngine: ReturnType<typeof useAudioEngine>
+  spotify: ReturnType<typeof useSpotifyPlayer>
   onBeforePlay?: () => Promise<boolean>
 }
 
-export default function SearchBar({ audioEngine, onBeforePlay }: Props) {
+export default function SearchBar({ audioEngine, spotify, onBeforePlay }: Props) {
   const [inputValue, setInputValue] = useState('')
   const [showResults, setShowResults] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
@@ -79,14 +81,21 @@ export default function SearchBar({ audioEngine, onBeforePlay }: Props) {
       album: result.collectionName || '',
       previewUrl: result.previewUrl,
       artworkUrl: result.artworkUrl100?.replace('100x100', '300x300') || result.artworkUrl100 || '',
-      duration: Math.round((result.trackTimeMillis || 30000) / 1000),
+      duration: Math.round((result.trackTimeMillis || 180000) / 1000),
       genre: result.primaryGenreName || '',
     }
 
-    setTrack(track)
+    if (result.source === 'spotify' && result.spotifyUri) {
+      setTrack(track, 'spotify')
+      const ok = await spotify.playUri(result.spotifyUri)
+      if (!ok) return
+      void fetchLyrics(track.artist, track.title, track.duration || 180)
+      return
+    }
+
+    setTrack(track, 'search')
     const audio = audioEngine.initAudio(track.previewUrl, 'search')
     await audio.play().catch(() => {})
-    // Use real track duration (full song length from iTunes) so lyrics span the whole track
     void fetchLyrics(track.artist, track.title, track.duration || 180)
   }
 

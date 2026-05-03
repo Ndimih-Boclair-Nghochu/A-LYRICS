@@ -13,8 +13,17 @@ export function useSearch() {
     async (query: string) => {
       setLoading(true)
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`)
-        if (!res.ok) throw new Error('Search failed')
+        const source = usePlayerStore.getState().search.source
+        const endpoint = source === 'spotify' ? '/api/spotify/search' : '/api/search'
+        const res = await fetch(`${endpoint}?q=${encodeURIComponent(query)}`)
+        if (!res.ok) {
+          if (source === 'spotify' && res.status === 401) {
+            setError('Connect Spotify to search')
+            setResults([], false)
+            return
+          }
+          throw new Error('Search failed')
+        }
         const data = await res.json()
         setResults(data.results || [])
       } catch {

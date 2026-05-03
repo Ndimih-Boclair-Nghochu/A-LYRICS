@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Track, SearchResult, LyricLine, PlayerState, SearchState, LyricsState } from '@/types/music'
+import type { Track, SearchResult, LyricLine, PlayerState, SearchState, LyricsState, SearchSource, SpotifyState } from '@/types/music'
 import type { BeatState } from '@/types/beat'
 import { DEFAULT_BEAT_STATE } from '@/types/beat'
 
@@ -8,8 +8,9 @@ interface PlayerStore {
   search: SearchState
   lyrics: LyricsState
   beat: BeatState
+  spotify: SpotifyState
 
-  setTrack: (track: Track) => void
+  setTrack: (track: Track, source?: PlayerState['source']) => void
   setStatus: (status: PlayerState['status']) => void
   setPlayerTime: (currentTime: number, duration: number) => void
   setVolume: (volume: number) => void
@@ -19,6 +20,9 @@ interface PlayerStore {
   setSearchResults: (results: SearchResult[], isLoading?: boolean) => void
   setSearchLoading: (isLoading: boolean) => void
   setSearchError: (error: string | null) => void
+  setSearchSource: (source: SearchSource) => void
+
+  setSpotifyState: (state: Partial<SpotifyState>) => void
 
   setLyrics: (lines: LyricLine[], rawText: string) => void
   setActiveLyricLine: (index: number) => void
@@ -42,6 +46,17 @@ const initialSearch: SearchState = {
   results: [],
   isLoading: false,
   error: null,
+  source: 'audius',
+}
+
+const initialSpotify: SpotifyState = {
+  connected: false,
+  premium: null,
+  deviceId: null,
+  accessToken: null,
+  expiresAt: 0,
+  userName: null,
+  error: null,
 }
 
 const initialLyrics: LyricsState = {
@@ -57,10 +72,11 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
   search: initialSearch,
   lyrics: initialLyrics,
   beat: DEFAULT_BEAT_STATE,
+  spotify: initialSpotify,
 
-  setTrack: (track) =>
+  setTrack: (track, source) =>
     set((s) => ({
-      player: { ...s.player, currentTrack: track, status: 'loading', currentTime: 0, duration: 0 },
+      player: { ...s.player, currentTrack: track, source: source ?? s.player.source, status: 'loading', currentTime: 0, duration: 0 },
     })),
 
   setStatus: (status) =>
@@ -86,6 +102,12 @@ export const usePlayerStore = create<PlayerStore>((set) => ({
 
   setSearchError: (error) =>
     set((s) => ({ search: { ...s.search, error, isLoading: false } })),
+
+  setSearchSource: (source) =>
+    set((s) => ({ search: { ...s.search, source, results: [] } })),
+
+  setSpotifyState: (state) =>
+    set((s) => ({ spotify: { ...s.spotify, ...state } })),
 
   setLyrics: (lines, rawText) =>
     set((s) => ({

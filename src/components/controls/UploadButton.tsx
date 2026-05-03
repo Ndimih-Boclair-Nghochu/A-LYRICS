@@ -43,7 +43,7 @@ export default function UploadButton({ audioEngine, onBeforePlay }: Props) {
         duration: 0,
         genre: '',
       }
-      setTrack(track)
+      setTrack(track, 'upload')
 
       const audio = audioEngine.initAudio(url, 'upload')
       // Wait for metadata so we know the real duration, then fetch full-length lyrics

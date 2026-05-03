@@ -9,8 +9,10 @@ export interface Track {
   genre: string
 }
 
+export type SearchSource = 'audius' | 'spotify'
+
 export interface SearchResult {
-  trackId: number
+  trackId: string | number
   trackName: string
   artistName: string
   collectionName: string
@@ -18,6 +20,8 @@ export interface SearchResult {
   artworkUrl100: string
   trackTimeMillis: number
   primaryGenreName: string
+  source?: SearchSource
+  spotifyUri?: string
 }
 
 export interface LyricLine {
@@ -29,7 +33,7 @@ export interface LyricLine {
 
 export interface PlayerState {
   status: 'idle' | 'loading' | 'playing' | 'paused'
-  source: 'search' | 'upload' | null
+  source: 'search' | 'upload' | 'spotify' | null
   currentTrack: Track | null
   currentTime: number
   duration: number
@@ -40,6 +44,17 @@ export interface SearchState {
   query: string
   results: SearchResult[]
   isLoading: boolean
+  error: string | null
+  source: SearchSource
+}
+
+export interface SpotifyState {
+  connected: boolean
+  premium: boolean | null
+  deviceId: string | null
+  accessToken: string | null
+  expiresAt: number
+  userName: string | null
   error: string | null
 }
 

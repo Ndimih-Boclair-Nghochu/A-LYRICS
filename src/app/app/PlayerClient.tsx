@@ -9,15 +9,20 @@ import SearchBar from '@/components/controls/SearchBar'
 import PlayerControls from '@/components/controls/PlayerControls'
 import UploadButton from '@/components/controls/UploadButton'
 import RecordButton from '@/components/controls/RecordButton'
+import SourceToggle from '@/components/controls/SourceToggle'
 import UsageLimitModal from '@/components/shared/UsageLimitModal'
 import { useAudioEngine } from '@/hooks/useAudioEngine'
+import { useSpotifyPlayer } from '@/hooks/useSpotifyPlayer'
 import { usePlayerStore } from '@/store/playerStore'
+
+type Toast = 'success' | 'failed' | 'spotify_connected' | 'spotify_failed' | null
 
 export default function PlayerClient() {
   const { data: session, update } = useSession()
   const audioEngine = useAudioEngine()
+  const spotify = useSpotifyPlayer()
   const [limitModalOpen, setLimitModalOpen] = useState(false)
-  const [paymentToast, setPaymentToast] = useState<'success' | 'failed' | null>(null)
+  const [toast, setToast] = useState<Toast>(null)
 
   const status = usePlayerStore((s) => s.player.status)
   const isPlaying = status === 'playing'
@@ -26,15 +31,23 @@ export default function PlayerClient() {
     const params = new URLSearchParams(window.location.search)
     const payment = params.get('payment')
     const plan = params.get('plan')
+    const sp = params.get('spotify')
+
+    window.history.replaceState({}, '', '/app')
+
     if (payment === 'success') {
-      setPaymentToast('success')
+      setToast('success')
       if (plan) void update({ plan })
-      window.history.replaceState({}, '', '/app')
-      setTimeout(() => setPaymentToast(null), 5000)
+      setTimeout(() => setToast(null), 5000)
     } else if (payment === 'failed') {
-      setPaymentToast('failed')
-      window.history.replaceState({}, '', '/app')
-      setTimeout(() => setPaymentToast(null), 4000)
+      setToast('failed')
+      setTimeout(() => setToast(null), 4000)
+    } else if (sp === 'connected') {
+      setToast('spotify_connected')
+      setTimeout(() => setToast(null), 4000)
+    } else if (sp === 'failed') {
+      setToast('spotify_failed')
+      setTimeout(() => setToast(null), 4000)
     }
   }, [update])
 
@@ -48,28 +61,43 @@ export default function PlayerClient() {
     return true
   }, [update])
 
+  const toastConfig: Record<NonNullable<Toast>, { text: string; bg: string }> = {
+    success: { text: '🎉 Payment successful! Plan upgraded!', bg: 'linear-gradient(135deg,#00F5A0,#059669)' },
+    failed: { text: '❌ Payment failed. Please try again.', bg: 'linear-gradient(135deg,#EF4444,#DC2626)' },
+    spotify_connected: { text: '♫ Spotify connected! Switch to Spotify in the search bar.', bg: 'linear-gradient(135deg,#1DB954,#15803d)' },
+    spotify_failed: { text: '❌ Spotify connection failed. Please try again.', bg: 'linear-gradient(135deg,#EF4444,#DC2626)' },
+  }
+
   return (
     <div className="fixed inset-0 flex flex-col" style={{ background: '#0A0A1A' }}>
       <Particles />
 
       <AnimatePresence>
-        {paymentToast && (
+        {toast && (
           <motion.div
             initial={{ opacity: 0, y: -40 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -40 }}
             className="fixed top-4 left-3 right-3 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto sm:w-auto z-50 px-5 py-3 rounded-2xl font-bold text-white text-sm shadow-2xl text-center"
-            style={{ background: paymentToast === 'success' ? 'linear-gradient(135deg,#00F5A0,#059669)' : 'linear-gradient(135deg,#EF4444,#DC2626)' }}
+            style={{ background: toastConfig[toast].bg }}
           >
-            {paymentToast === 'success' ? '🎉 Payment successful! Plan upgraded!' : '❌ Payment failed. Please try again.'}
+            {toastConfig[toast].text}
           </motion.div>
         )}
       </AnimatePresence>
 
       <Header />
 
+      {/* Source toggle row */}
+      <div className="relative z-30 px-3 sm:px-4 pt-1 shrink-0">
+        <div className="flex justify-end max-w-4xl mx-auto">
+          <SourceToggle spotify={spotify} />
+        </div>
+      </div>
+
+      {/* Search row */}
       <div className="relative z-30 px-3 sm:px-4 pb-2 shrink-0">
         <div className="flex items-center gap-2 max-w-4xl mx-auto">
           <div className="flex-1 min-w-0">
-            <SearchBar audioEngine={audioEngine} onBeforePlay={checkAndIncrementUsage} />
+            <SearchBar audioEngine={audioEngine} spotify={spotify} onBeforePlay={checkAndIncrementUsage} />
           </div>
           <UploadButton audioEngine={audioEngine} onBeforePlay={checkAndIncrementUsage} />
           <RecordButton audioEngine={audioEngine} />
@@ -93,7 +121,7 @@ export default function PlayerClient() {
       </div>
 
       <div className="relative z-20 shrink-0">
-        <PlayerControls audioEngine={audioEngine} />
+        <PlayerControls audioEngine={audioEngine} spotify={spotify} />
       </div>
 
       <UsageLimitModal
